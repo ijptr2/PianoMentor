@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'widgets/piano_visualizer.dart';
 import 'widgets/ai_suggestion_panel.dart';
 
@@ -12,51 +13,62 @@ class LiveFeedbackView extends StatefulWidget {
 }
 
 class _LiveFeedbackViewState extends State<LiveFeedbackView> {
-  final DatabaseReference _notesRef = FirebaseDatabase.instance.ref('notes');
+  final String _baseUrl = 'http://localhost:5000/api';
   final Set<int> _activeNotes = {};
   List<String> _aiSuggestions = [];
   String _currentScale = '';
   String _dailyGoal = "Practice C major scale for 10 minutes";
+  Timer? _notesFetchTimer;
   Timer? _aiUpdateTimer;
   
   @override
   void initState() {
     super.initState();
-    _setupNotesListener();
     _fetchInitialAISuggestions();
+    _fetchDailyGoal();
     
-    // Set up periodic AI updates (in a real app, these would come from the server)
-    _aiUpdateTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+    // Set up periodic notes updates
+    _notesFetchTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      _fetchLiveNotes();
+    });
+    
+    // Set up periodic AI updates
+    _aiUpdateTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _fetchAISuggestions();
     });
   }
   
-  void _setupNotesListener() {
-    // Listen for note events from Firebase
-    _notesRef.limitToLast(10).onChildAdded.listen((event) {
-      final data = event.snapshot.value as Map<dynamic, dynamic>;
+  Future<void> _fetchLiveNotes() async {
+    try {
+      final response = await http.get(Uri.parse('$_baseUrl/notes'));
       
-      // Get note information
-      final int midiNote = data['midiNote'] as int;
-      final bool isNoteOn = data['isNoteOn'] as bool;
-      
-      setState(() {
-        if (isNoteOn) {
-          _activeNotes.add(midiNote);
-        } else {
-          _activeNotes.remove(midiNote);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final notes = data['notes'] as List<dynamic>;
+        
+        // Update active notes
+        final Set<int> newActiveNotes = {};
+        
+        for (var note in notes) {
+          final int midiNote = note['midiNote'] as int;
+          final bool isNoteOn = note['isNoteOn'] as bool;
+          
+          if (isNoteOn) {
+            newActiveNotes.add(midiNote);
+          }
         }
-      });
-      
-      // Auto-remove notes after a timeout (in case note-off events are missed)
-      if (isNoteOn) {
-        Future.delayed(const Duration(seconds: 3), () {
+        
+        // Update state if changes detected
+        if (setEquals(newActiveNotes, _activeNotes) == false) {
           setState(() {
-            _activeNotes.remove(midiNote);
+            _activeNotes.clear();
+            _activeNotes.addAll(newActiveNotes);
           });
-        });
+        }
       }
-    });
+    } catch (e) {
+      print('Error fetching notes: $e');
+    }
   }
   
   void _fetchInitialAISuggestions() {
@@ -70,37 +82,76 @@ class _LiveFeedbackViewState extends State<LiveFeedbackView> {
     _currentScale = "C Major";
   }
   
-  void _fetchAISuggestions() {
-    // Simulate AI suggestions based on currently played notes
-    // In a real app, this would make an API call to the backend
-    
-    // Check what notes are being played to determine the scale
-    List<int> activeNotesMod12 = _activeNotes.map((note) => note % 12).toList();
-    
-    if (activeNotesMod12.contains(0) && activeNotesMod12.contains(4) && activeNotesMod12.contains(7)) {
-      _currentScale = "C Major";
-      _aiSuggestions = [
-        "You're playing C Major chord! Try adding the F chord next",
-        "Practice transitioning between C and G chords smoothly",
-        "Try playing the C Major scale with this chord"
-      ];
-    } else if (activeNotesMod12.contains(9) && activeNotesMod12.contains(0) && activeNotesMod12.contains(4)) {
-      _currentScale = "A Minor";
-      _aiSuggestions = [
-        "You're playing A Minor chord! Try the relative harmonic minor scale",
-        "Practice transitioning between A minor and E minor",
-        "Focus on the emotion - minor chords often convey sadness"
-      ];
-    } else if (activeNotesMod12.length >= 2) {
-      _currentScale = "Exploring intervals";
-      _aiSuggestions = [
-        "Try to maintain consistent timing between notes",
-        "Focus on smooth transitions between intervals",
-        "Listen carefully to how the intervals sound together"
-      ];
+  Future<void> _fetchDailyGoal() async {
+    try {
+      final response = await http.get(Uri.parse('$_baseUrl/daily-goal'));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        setState(() {
+          _dailyGoal = data['goal'] ?? "Practice C major scale for 10 minutes";
+        });
+      }
+    } catch (e) {
+      print('Error fetching daily goal: $e');
     }
-    
-    setState(() {});
+  }
+  
+  Future<void> _fetchAISuggestions() async {
+    try {
+      // Get currently active notes for analysis
+      List<Map<String, dynamic>> notesList = [];
+      
+      for (int midiNote in _activeNotes) {
+        notesList.add({
+          'midiNote': midiNote,
+          'velocity': 100,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'isNoteOn': true
+        });
+      }
+      
+      // Get suggestions from API if we have active notes
+      if (notesList.isNotEmpty) {
+        final response = await http.post(
+          Uri.parse('$_baseUrl/suggestions'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'sessionId': 'web-dashboard-${DateTime.now().millisecondsSinceEpoch}',
+            'notes': notesList
+          })
+        );
+        
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          setState(() {
+            _aiSuggestions = List<String>.from(data['suggestions'] ?? []);
+          });
+        }
+      }
+      
+      // Analyze scale
+      final List<int> midiNotes = _activeNotes.toList();
+      if (midiNotes.isNotEmpty) {
+        final response = await http.post(
+          Uri.parse('$_baseUrl/analyze-scale'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'notes': midiNotes
+          })
+        );
+        
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          setState(() {
+            _currentScale = data['scale'] ?? "";
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching AI suggestions: $e');
+    }
   }
   
   @override
@@ -211,6 +262,7 @@ class _LiveFeedbackViewState extends State<LiveFeedbackView> {
   @override
   void dispose() {
     _aiUpdateTimer?.cancel();
+    _notesFetchTimer?.cancel();
     super.dispose();
   }
 }

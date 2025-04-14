@@ -1,20 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'live_feedback_view.dart';
 import 'practice_history.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: FirebaseOptions(
-      apiKey: const String.fromEnvironment('FIREBASE_API_KEY'),
-      appId: const String.fromEnvironment('FIREBASE_APP_ID'),
-      messagingSenderId: const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: ''),
-      projectId: const String.fromEnvironment('FIREBASE_PROJECT_ID'),
-    ),
-  );
+  // No Firebase initialization needed for the prototype
   
   runApp(const PianoLearningDashboard());
 }
