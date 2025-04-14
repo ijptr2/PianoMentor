@@ -3,228 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Piano Learning System</title>
+    <title>Piano Learning System</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             margin: 0;
             padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
             background-color: #f5f5f5;
         }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
         header {
-            background-color: #2c3e50;
+            width: 100%;
+            background-color: #1a1a1a;
             color: white;
-            padding: 15px 0;
             text-align: center;
+            padding: 1rem 0;
         }
-        
+        main {
+            max-width: 800px;
+            width: 90%;
+            margin: 2rem 0;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
         h1 {
             margin: 0;
         }
-        
-        .dashboard {
-            margin-top: 20px;
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            padding: 20px;
+        h2 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
         }
-        
-        .piano-visualization {
-            margin-top: 20px;
-            height: 150px;
-            background-color: #ddd;
-            border-radius: 5px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .key {
-            position: absolute;
-            bottom: 0;
-            background-color: #3498db;
-            width: 20px;
-            transition: height 0.2s ease;
-        }
-        
-        .metrics {
+        .piano-learning-system {
             display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
+            flex-direction: column;
+            gap: 1.5rem;
         }
-        
-        .metric-card {
-            flex: 1;
-            margin: 0 10px;
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            padding: 15px;
-            text-align: center;
-        }
-        
-        .metric-value {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 10px 0;
-            color: #2c3e50;
-        }
-        
-        .suggestions {
-            margin-top: 20px;
-        }
-        
-        .suggestion-item {
+        .api-endpoints {
             background-color: #f9f9f9;
-            border-left: 4px solid #3498db;
-            padding: 10px 15px;
-            margin-bottom: 10px;
+            padding: 1.5rem;
+            border-radius: 8px;
         }
-        
-        .version {
-            margin-top: 30px;
+        .endpoint {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        .endpoint:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .endpoint-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .endpoint-description {
+            margin-bottom: 0.5rem;
+            color: #555;
+        }
+        .endpoint-url {
+            font-family: monospace;
+            background-color: #eee;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        .section {
+            margin-bottom: 2rem;
+        }
+        footer {
+            margin-top: auto;
+            padding: 1rem 0;
             text-align: center;
-            font-size: 12px;
-            color: #7f8c8d;
+            width: 100%;
+            background-color: #1a1a1a;
+            color: white;
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>AI Piano Learning Dashboard</h1>
+        <h1>AI-Powered Piano Learning System</h1>
+        <p>Prototype Version {{ prototype_version }}</p>
     </header>
     
-    <div class="container">
-        <div class="dashboard">
-            <h2>Real-time Piano Visualization</h2>
-            <div class="piano-visualization" id="pianoVisualization">
-                <!-- Keys will be added dynamically -->
-            </div>
-            
-            <div class="metrics">
-                <div class="metric-card">
-                    <h3>Notes Played</h3>
-                    <div class="metric-value" id="notesPlayed">0</div>
+    <main>
+        <div class="piano-learning-system">
+            <section class="section">
+                <h2>System Overview</h2>
+                <p>This prototype demonstrates a dual-device piano learning system with AI-powered suggestions and feedback. The system consists of three main components:</p>
+                <ol>
+                    <li><strong>Mobile Piano App</strong> - A Flutter mobile application that serves as the piano keyboard interface</li>
+                    <li><strong>Web Dashboard</strong> - A Flutter web application that displays real-time feedback and visualizations</li>
+                    <li><strong>Backend Server</strong> - This Flask server that processes data, generates AI suggestions, and handles communication between components</li>
+                </ol>
+            </section>
+
+            <section class="section">
+                <h2>API Endpoints</h2>
+                <div class="api-endpoints">
+                    <div class="endpoint">
+                        <div class="endpoint-title">Get Real-time Notes</div>
+                        <div class="endpoint-description">Get the most recent notes being played</div>
+                        <div class="endpoint-url">GET /api/notes</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="endpoint-title">Save Note</div>
+                        <div class="endpoint-description">Save a played note to the system</div>
+                        <div class="endpoint-url">POST /api/save-note</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="endpoint-title">Get Sessions</div>
+                        <div class="endpoint-description">Get all practice sessions</div>
+                        <div class="endpoint-url">GET /api/sessions</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="endpoint-title">Get AI Suggestions</div>
+                        <div class="endpoint-description">Generate AI practice suggestions based on played notes</div>
+                        <div class="endpoint-url">POST /api/suggestions</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="endpoint-title">Analyze Scale</div>
+                        <div class="endpoint-description">Analyze what scale is being played</div>
+                        <div class="endpoint-url">POST /api/analyze-scale</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="endpoint-title">Get Daily Goal</div>
+                        <div class="endpoint-description">Get the daily practice goal</div>
+                        <div class="endpoint-url">GET /api/daily-goal</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="endpoint-title">Get Progress Report</div>
+                        <div class="endpoint-description">Generate a progress report for practice sessions</div>
+                        <div class="endpoint-url">GET /api/progress-report</div>
+                    </div>
                 </div>
-                <div class="metric-card">
-                    <h3>Practice Time</h3>
-                    <div class="metric-value" id="practiceTime">0:00</div>
-                </div>
-                <div class="metric-card">
-                    <h3>Accuracy</h3>
-                    <div class="metric-value" id="accuracy">-</div>
-                </div>
-            </div>
-            
-            <div class="suggestions">
-                <h2>AI Suggestions</h2>
-                <div id="suggestionsList">
-                    <div class="suggestion-item">Connect your mobile device and start playing to see AI suggestions.</div>
-                </div>
-            </div>
+            </section>
+
+            <section class="section">
+                <h2>Testing the API</h2>
+                <p>You can test the API endpoints using curl or other HTTP clients:</p>
+                <pre>curl http://localhost:5000/api/notes</pre>
+                <p>Or send a note to the system:</p>
+                <pre>curl -X POST -H "Content-Type: application/json" \
+-d '{"note": {"midiNote": 60, "velocity": 100, "timestamp": 1623456789, "isNoteOn": true}, "sessionId": "test-session"}' \
+http://localhost:5000/api/save-note</pre>
+            </section>
         </div>
-        
-        <div class="version">
-            Piano Learning System - Prototype v{{ prototype_version }}
-        </div>
-    </div>
+    </main>
     
-    <script>
-        // Fetch real-time notes from the backend
-        function fetchNotes() {
-            fetch('/api/notes')
-                .then(response => response.json())
-                .then(data => {
-                    updateVisualization(data.notes);
-                    updateMetrics(data.notes);
-                })
-                .catch(error => console.error('Error fetching notes:', error));
-        }
-        
-        // Fetch AI suggestions
-        function fetchSuggestions() {
-            fetch('/api/suggestions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    sessionId: getCurrentSessionId(),
-                    notes: getRecentNotes()
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.suggestions && data.suggestions.length > 0) {
-                    updateSuggestions(data.suggestions);
-                }
-            })
-            .catch(error => console.error('Error fetching suggestions:', error));
-        }
-        
-        // Update piano visualization
-        function updateVisualization(notes) {
-            const container = document.getElementById('pianoVisualization');
-            container.innerHTML = '';
-            
-            // Show only the most recent active notes
-            const activeNotes = notes.filter(note => note.isNoteOn);
-            
-            activeNotes.forEach((note, index) => {
-                const key = document.createElement('div');
-                key.className = 'key';
-                key.style.left = (index * 25) + 'px';
-                key.style.height = note.velocity + 'px';
-                
-                container.appendChild(key);
-            });
-        }
-        
-        // Update metrics based on notes
-        function updateMetrics(notes) {
-            // Count unique notes played
-            const uniqueNotes = new Set(notes.map(note => note.midiNote));
-            document.getElementById('notesPlayed').textContent = uniqueNotes.size;
-            
-            // Just a placeholder - would need real data for practice time
-            const minutes = Math.floor(Math.random() * 10);
-            const seconds = Math.floor(Math.random() * 60);
-            document.getElementById('practiceTime').textContent = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
-        }
-        
-        // Update suggestions list
-        function updateSuggestions(suggestions) {
-            const container = document.getElementById('suggestionsList');
-            container.innerHTML = '';
-            
-            suggestions.forEach(suggestion => {
-                const item = document.createElement('div');
-                item.className = 'suggestion-item';
-                item.textContent = suggestion;
-                container.appendChild(item);
-            });
-        }
-        
-        // Helper function to get current session ID (would normally come from app state)
-        function getCurrentSessionId() {
-            return 'dashboard-' + Date.now();
-        }
-        
-        // Helper function to get recent notes (would normally come from app state)
-        function getRecentNotes() {
-            return [];
-        }
-        
-        // Poll for updates
-        setInterval(fetchNotes, 500);
-        setInterval(fetchSuggestions, 5000);
-    </script>
+    <footer>
+        <p>Piano Learning System Prototype © 2025</p>
+    </footer>
 </body>
 </html>
