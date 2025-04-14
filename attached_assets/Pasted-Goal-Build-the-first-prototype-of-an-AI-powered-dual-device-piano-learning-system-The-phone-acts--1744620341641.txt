@@ -1,0 +1,104 @@
+Goal: Build the first prototype of an AI-powered, dual-device piano learning system. The phone acts as a playable piano keyboard, and the laptop shows lessons, feedback, and progress. Devices are synced via Firebase in real-time. AI adjusts learning paths based on user strengths and weaknesses.
+
+Features to Implement:
+1. Dual Device Experience
+Phone App (Flutter App)
+
+Full-screen playable piano keyboard with multi-touch support.
+
+Sound for each key press (use MIDI sounds or Flutter packages like flutter_midi_command).
+
+Real-time note data sent to Firebase with timestamps.
+
+UI design is responsive — no small keys, each key sized properly across screen width.
+
+Laptop App (Web App using Flutter Web)
+
+Real-time display of which notes are being played on the phone (sync from Firebase).
+
+Shows AI-generated practice suggestions and lesson progress.
+
+Option to review previous practice sessions.
+
+2. Firebase Integration
+Use Firebase Realtime Database or Cloud Firestore to:
+
+Store notes being played (live data stream).
+
+Track user history and session metrics (note accuracy, timing).
+
+Store AI-generated lesson plans or practice goals.
+
+3. AI-Based Personalized Learning
+On the backend (Node.js or Python — use Replit’s Flask template if using Python):
+
+Basic rule-based system to evaluate timing accuracy, chord recognition, and suggest what to practice next.
+
+Detects if user struggles with certain scales or rhythm.
+
+Sends updated practice suggestions to Firebase for the laptop app to display.
+
+4. Freestyle Mode
+On phone: User can play freely.
+
+On backend: System detects scale/key and gives name/feedback (e.g. “You’re playing in A Minor”).
+
+On laptop: Display current scale, chord suggestions, and improv tips.
+
+5. UI/UX Details
+Phone UI:
+
+Full keyboard with 14–16 white keys visible at once.
+
+Sustain option, volume slider, toggle for practice vs freestyle mode.
+
+Laptop UI:
+
+Left Panel: Daily goal, practice log.
+
+Center: Real-time note viewer.
+
+Right Panel: AI tips (“Try practicing G major scale,” “Smooth your transitions”).
+
+Clean, piano-like color scheme (black/white/gold or soft blue tones).
+
+Tools/Packages to Use on Replit
+Flutter: Use Flutter Web and Flutter Mobile support (can test mobile using Android emulator or iOS device).
+
+Firebase: Firebase Core, Firebase Auth, Cloud Firestore.
+
+Audio & Piano UI: flutter_midi, flutter_sound, or custom widget piano packages.
+
+Backend AI (Optional for now):
+
+Flask (Python) or Node.js server
+
+Uses logic to parse note sequences and suggest learning paths
+
+Can host ML models later using TensorFlow Lite
+
+Folder Structure
+bash
+Copy
+Edit
+/piano_app/
+  /lib/
+    main.dart
+    piano_keyboard.dart
+    firebase_service.dart
+    learning_ai.dart
+/web_dashboard/
+  /lib/
+    main.dart
+    live_feedback_view.dart
+    practice_history.dart
+/backend/
+  app.py or server.js  # AI logic and suggestions
+Bonus Future Features (Optional)
+User login with Firebase Auth
+
+Save recordings and turn into sheet music
+
+Upload melody and AI auto-suggests chords
+
+Add soundfonts for realistic piano feel
