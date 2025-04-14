@@ -1,78 +1,90 @@
-import 'package:flutter/services.dart';
-import 'package:flutter_midi/flutter_midi.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class AudioManager {
-  late FlutterMidi _flutterMidi;
+  // For a real app, we would have a soundfont or individual piano notes
+  // For the prototype, we'll simulate the audio functionality
+  
+  final Map<int, AudioPlayer> _players = {};
+  final Map<int, AudioCache> _audioCaches = {};
   double _volume = 0.8;
   bool _sustainEnabled = false;
-  final Set<int> _activeNotes = {};
-  
-  AudioManager() {
-    _flutterMidi = FlutterMidi();
-  }
+  final Set<int> _sustainedNotes = {};
   
   Future<void> initialize() async {
-    // Load soundfont
-    await _flutterMidi.unmute();
-    
-    // Try to load a piano soundfont
-    try {
-      ByteData _byte = await rootBundle.load('assets/sf2/piano.sf2');
-      await _flutterMidi.prepare(sf2: _byte);
-    } catch (e) {
-      print('Error loading soundfont: $e');
-      // Fallback to default soundfont if needed
-    }
+    // In a real app, we would preload all the piano samples here
+    print('Audio engine initialized');
   }
   
-  // Play MIDI note
-  void playNote(int midiNote) {
-    // Apply volume to note velocity (MIDI velocity ranges from 0-127)
-    final int velocity = (_volume * 127).toInt();
-    
-    // Send MIDI note on message
-    _flutterMidi.playMidiNote(midi: midiNote, velocity: velocity);
-    
-    // Keep track of active notes (for sustain)
-    _activeNotes.add(midiNote);
-  }
-  
-  // Stop MIDI note
-  void stopNote(int midiNote) {
-    // Only stop if sustain is not enabled
-    if (!_sustainEnabled) {
-      _flutterMidi.stopMidiNote(midi: midiNote);
-      _activeNotes.remove(midiNote);
-    }
-  }
-  
-  // Set volume level (0.0 to 1.0)
   void setVolume(double volume) {
     _volume = volume;
+    
+    // Update volume for all currently playing notes
+    for (final player in _players.values) {
+      player.setVolume(_volume);
+    }
   }
   
-  // Toggle sustain pedal
   void setSustain(bool enabled) {
     _sustainEnabled = enabled;
     
-    // If sustain is disabled, stop all active notes
+    // If sustain is disabled, stop all sustained notes
     if (!_sustainEnabled) {
-      _releaseSustainedNotes();
+      for (final midiNote in _sustainedNotes.toList()) {
+        _stopNote(midiNote);
+      }
+      _sustainedNotes.clear();
     }
   }
   
-  // Release all sustained notes
-  void _releaseSustainedNotes() {
-    for (final note in _activeNotes.toList()) {
-      _flutterMidi.stopMidiNote(midi: note);
+  void playNote(int midiNote) {
+    // In a real app, we would play the corresponding piano sample
+    // For the prototype, we'll simulate this
+    
+    if (_players.containsKey(midiNote)) {
+      // Stop the note if it's already playing
+      _players[midiNote]!.stop();
+    } else {
+      // Create a new player for this note
+      _players[midiNote] = AudioPlayer();
+      _audioCaches[midiNote] = AudioCache();
     }
-    _activeNotes.clear();
+    
+    // Simulate playing the note (in a real app, we would load the specific piano sample)
+    print('Playing note: $midiNote');
+    
+    // Set the volume
+    _players[midiNote]!.setVolume(_volume);
   }
   
-  // Clean up resources
+  void stopNote(int midiNote) {
+    if (_sustainEnabled) {
+      // If sustain is on, mark as sustained but don't stop yet
+      _sustainedNotes.add(midiNote);
+    } else {
+      _stopNote(midiNote);
+    }
+  }
+  
+  void _stopNote(int midiNote) {
+    if (_players.containsKey(midiNote)) {
+      _players[midiNote]!.stop();
+      _players[midiNote]!.dispose();
+      _players.remove(midiNote);
+      _audioCaches.remove(midiNote);
+      print('Stopped note: $midiNote');
+    }
+  }
+  
   void dispose() {
-    // Stop all playing notes
-    _releaseSustainedNotes();
+    // Stop and dispose all players
+    for (final player in _players.values) {
+      player.stop();
+      player.dispose();
+    }
+    _players.clear();
+    _audioCaches.clear();
+    _sustainedNotes.clear();
+    
+    print('Audio engine disposed');
   }
 }

@@ -11,7 +11,7 @@ class NoteModel {
     required this.isNoteOn,
   });
   
-  // Convert to JSON for Firebase
+  // Convert to JSON for API transmission
   Map<String, dynamic> toJson() {
     return {
       'midiNote': midiNote,
@@ -21,27 +21,13 @@ class NoteModel {
     };
   }
   
-  // Create from JSON (for receiving from Firebase)
+  // Create from JSON data
   factory NoteModel.fromJson(Map<String, dynamic> json) {
     return NoteModel(
-      midiNote: json['midiNote'],
-      velocity: json['velocity'],
-      timestamp: json['timestamp'],
-      isNoteOn: json['isNoteOn'],
+      midiNote: json['midiNote'] as int,
+      velocity: json['velocity'] as int,
+      timestamp: json['timestamp'] as int,
+      isNoteOn: json['isNoteOn'] as bool,
     );
-  }
-  
-  // Get note name from MIDI note number
-  String get noteName {
-    final noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    final octave = (midiNote ~/ 12) - 1;
-    final noteIndex = midiNote % 12;
-    return '${noteNames[noteIndex]}$octave';
-  }
-  
-  // Check if this is a white key
-  bool get isWhiteKey {
-    final noteIndex = midiNote % 12;
-    return [0, 2, 4, 5, 7, 9, 11].contains(noteIndex);
   }
 }

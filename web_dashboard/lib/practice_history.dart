@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class PracticeHistory extends StatefulWidget {
   const PracticeHistory({Key? key}) : super(key: key);
@@ -11,7 +12,7 @@ class PracticeHistory extends StatefulWidget {
 }
 
 class _PracticeHistoryState extends State<PracticeHistory> {
-  final DatabaseReference _sessionsRef = FirebaseDatabase.instance.ref('sessions');
+  final String _baseUrl = 'http://localhost:5000/api';
   List<PracticeSession> _sessions = [];
   bool _isLoading = true;
   
@@ -23,23 +24,31 @@ class _PracticeHistoryState extends State<PracticeHistory> {
   
   Future<void> _loadSessions() async {
     try {
-      final snapshot = await _sessionsRef.orderByChild('startTime').limitToLast(10).get();
+      final response = await http.get(Uri.parse('$_baseUrl/sessions'));
       
-      if (snapshot.exists) {
-        final List<PracticeSession> sessions = [];
-        final data = snapshot.value as Map<dynamic, dynamic>;
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
         
-        data.forEach((key, value) {
-          sessions.add(PracticeSession.fromJson(key, value));
-        });
-        
-        // Sort sessions by start time (newest first)
-        sessions.sort((a, b) => b.startTime.compareTo(a.startTime));
-        
-        setState(() {
-          _sessions = sessions;
-          _isLoading = false;
-        });
+        if (data.containsKey('sessions')) {
+          final List<dynamic> sessionsData = data['sessions'];
+          final List<PracticeSession> sessions = [];
+          
+          for (var sessionData in sessionsData) {
+            sessions.add(PracticeSession.fromJson(
+              sessionData['id'] ?? 'unknown',
+              sessionData
+            ));
+          }
+          
+          setState(() {
+            _sessions = sessions;
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       } else {
         setState(() {
           _isLoading = false;
@@ -269,13 +278,17 @@ class PracticeSession {
     required this.notesCount,
   });
   
-  // Create from Firebase JSON data
+  // Create from local API JSON data
   factory PracticeSession.fromJson(String id, Map<dynamic, dynamic> json) {
     // Parse notes count if available
     int noteCount = 0;
     if (json.containsKey('notes')) {
-      final notes = json['notes'] as Map<dynamic, dynamic>;
-      noteCount = notes.length;
+      final notes = json['notes'];
+      if (notes is List) {
+        noteCount = notes.length;
+      } else if (notes is Map) {
+        noteCount = notes.length;
+      }
     }
     
     return PracticeSession(
