@@ -3,10 +3,6 @@ import 'package:flutter/material.dart';
 class PianoVisualizer extends StatelessWidget {
   final Set<int> activeNotes;
   
-  // Define piano range
-  final int startOctave = 3;
-  final int numOctaves = 3;
-  
   const PianoVisualizer({
     Key? key,
     required this.activeNotes,
@@ -14,138 +10,167 @@ class PianoVisualizer extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Calculate key dimensions
-        final totalWhiteKeys = numOctaves * 7 + 1; // C to C for each octave + 1
-        final double whiteKeyWidth = constraints.maxWidth / totalWhiteKeys;
-        final double blackKeyWidth = whiteKeyWidth * 0.6;
-        final double whiteKeyHeight = constraints.maxHeight;
-        final double blackKeyHeight = whiteKeyHeight * 0.6;
-        
-        return Stack(
-          children: [
-            // Draw white keys
-            Row(
-              children: List.generate(totalWhiteKeys, (index) {
-                // Calculate MIDI note number for white key
-                final int octave = startOctave + (index ~/ 7);
-                final int noteInOctave = index % 7;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Decide how many octaves to show
+          final octaves = 5;
+          final keysPerOctave = 12;
+          final totalWhiteKeys = octaves * 7; // 7 white keys per octave
+          final whiteKeyWidth = constraints.maxWidth / totalWhiteKeys;
+          final blackKeyWidth = whiteKeyWidth * 0.6;
+          final whiteKeyHeight = constraints.maxHeight;
+          final blackKeyHeight = whiteKeyHeight * 0.6;
+          
+          // Calculate offsets for each white key
+          final whiteKeyPositions = <int, double>{};
+          int whiteKeyIndex = 0;
+          
+          for (int octave = 0; octave < octaves; octave++) {
+            for (int note = 0; note < keysPerOctave; note++) {
+              // White keys are C, D, E, F, G, A, B (notes 0, 2, 4, 5, 7, 9, 11)
+              if ([0, 2, 4, 5, 7, 9, 11].contains(note)) {
+                final midiNote = octave * 12 + note + 36; // Start from C2 (36)
+                whiteKeyPositions[midiNote] = whiteKeyIndex * whiteKeyWidth;
+                whiteKeyIndex++;
+              }
+            }
+          }
+          
+          return Stack(
+            children: [
+              // White keys
+              ...whiteKeyPositions.entries.map((entry) {
+                final midiNote = entry.key;
+                final xPosition = entry.value;
+                final isActive = activeNotes.contains(midiNote);
                 
-                // Convert to MIDI note (C, D, E, F, G, A, B)
-                final int midiNote = octave * 12 + [0, 2, 4, 5, 7, 9, 11][noteInOctave];
-                final bool isActive = activeNotes.contains(midiNote);
-                
-                return Container(
+                return Positioned(
+                  left: xPosition,
                   width: whiteKeyWidth,
-                  height: whiteKeyHeight,
-                  decoration: BoxDecoration(
-                    color: isActive ? Colors.blue.withOpacity(0.3) : Colors.white,
-                    border: Border.all(color: Colors.grey[300]!),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(4),
-                      bottomRight: Radius.circular(4),
-                    ),
-                  ),
-                  alignment: Alignment.bottomCenter,
-                  padding: EdgeInsets.only(bottom: 20),
-                  child: Text(
-                    ['C', 'D', 'E', 'F', 'G', 'A', 'B'][noteInOctave] + octave.toString(),
-                    style: TextStyle(
-                      color: Colors.grey[700],
-                      fontSize: 12,
-                    ),
-                  ),
-                );
-              }),
-            ),
-            
-            // Draw black keys
-            Row(
-              children: List.generate(totalWhiteKeys - 1, (index) {
-                // Calculate MIDI note number for potential black key
-                final int octave = startOctave + (index ~/ 7);
-                final int noteInOctave = index % 7;
-                
-                // Only draw black keys where they should appear
-                final bool hasBlackKey = [0, 1, 3, 4, 5].contains(noteInOctave);
-                
-                if (!hasBlackKey) {
-                  return SizedBox(width: whiteKeyWidth);
-                }
-                
-                // Convert to MIDI note for black keys (C#, D#, F#, G#, A#)
-                final int midiNote = octave * 12 + [1, 3, 6, 8, 10][noteInOctave == 0 ? 0 : 
-                                                                   noteInOctave == 1 ? 1 :
-                                                                   noteInOctave == 3 ? 2 :
-                                                                   noteInOctave == 4 ? 3 : 4];
-                
-                final bool isActive = activeNotes.contains(midiNote);
-                
-                return Container(
-                  width: whiteKeyWidth,
-                  height: blackKeyHeight,
-                  padding: EdgeInsets.only(left: whiteKeyWidth - (blackKeyWidth / 2)),
+                  top: 0,
+                  bottom: 0,
                   child: Container(
-                    width: blackKeyWidth,
                     decoration: BoxDecoration(
-                      color: isActive ? Colors.blue[800] : Colors.black87,
-                      borderRadius: BorderRadius.only(
+                      color: isActive ? Colors.blue[100] : Colors.white,
+                      border: Border.all(color: Colors.grey[300]!),
+                      borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(4),
                         bottomRight: Radius.circular(4),
                       ),
                     ),
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          _getMidiNoteName(midiNote),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 );
               }),
-            ),
-            
-            // Notes being played visualization
-            if (activeNotes.isNotEmpty)
-              Positioned(
-                top: 20,
-                left: 20,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.music_note, color: Colors.blue),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Notes: ${_getActiveNoteNames()}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
+              
+              // Black keys
+              ...whiteKeyPositions.entries.map((entry) {
+                final midiNote = entry.key;
+                final xPosition = entry.value;
+                
+                // Check if there should be a black key to the right of this white key
+                final noteValue = midiNote % 12;
+                
+                // Black keys are after C, D, F, G, A (notes 0, 2, 5, 7, 9)
+                if ([0, 2, 5, 7, 9].contains(noteValue)) {
+                  final blackKeyNote = midiNote + 1;
+                  final isActive = activeNotes.contains(blackKeyNote);
+                  
+                  return Positioned(
+                    left: xPosition + whiteKeyWidth - (blackKeyWidth / 2),
+                    width: blackKeyWidth,
+                    top: 0,
+                    height: blackKeyHeight,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isActive ? Colors.blue[700] : Colors.black87,
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(4),
+                          bottomRight: Radius.circular(4),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
+                    ),
+                  );
+                } else {
+                  return const SizedBox.shrink();
+                }
+              }),
+              
+              // Note indicators for active notes
+              if (activeNotes.isNotEmpty)
+                ...activeNotes.map((midiNote) {
+                  // Find position of the note
+                  double? noteX;
+                  bool isBlackKey = false;
+                  
+                  // Check if it's a white key
+                  if (whiteKeyPositions.containsKey(midiNote)) {
+                    noteX = whiteKeyPositions[midiNote]! + whiteKeyWidth / 2;
+                  } else {
+                    // It's a black key, find the white key before it
+                    final whiteKeyBefore = midiNote - 1;
+                    if (whiteKeyPositions.containsKey(whiteKeyBefore)) {
+                      noteX = whiteKeyPositions[whiteKeyBefore]! + whiteKeyWidth;
+                      isBlackKey = true;
+                    }
+                  }
+                  
+                  if (noteX != null) {
+                    return Positioned(
+                      left: noteX - 15,
+                      top: isBlackKey ? blackKeyHeight - 30 : whiteKeyHeight - 80,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.blue[600],
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            _getMidiNoteName(midiNote),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  } else {
+                    return const SizedBox.shrink();
+                  }
+                }),
+            ],
+          );
+        },
+      ),
     );
   }
   
-  // Helper to get note names from MIDI numbers
-  String _getActiveNoteNames() {
-    final List<String> noteNames = [];
+  String _getMidiNoteName(int midiNote) {
+    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    final octave = (midiNote / 12).floor() - 1; // MIDI note 12 = C0
+    final noteInOctave = midiNote % 12;
     
-    for (final midiNote in activeNotes) {
-      noteNames.add(_getNoteNameFromMidi(midiNote));
-    }
-    
-    return noteNames.join(', ');
-  }
-  
-  String _getNoteNameFromMidi(int midiNote) {
-    final noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    final octave = (midiNote ~/ 12) - 1;
-    final noteIndex = midiNote % 12;
-    return '${noteNames[noteIndex]}$octave';
+    return noteNames[noteInOctave] + octave.toString();
   }
 }

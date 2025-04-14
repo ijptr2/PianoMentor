@@ -1,1 +1,1 @@
-{}
+{"test-session-1": {"startTime": 1744622928028, "notes": [{"midiNote": 60, "velocity": 100, "timestamp": 1623456789, "isNoteOn": true}], "deviceInfo": "Mobile Piano App", "mode": "practice", "aiSuggestions": ["Try practicing the C Major scale with both hands", "Try practicing the C Major chord and its inversions", "Focus on keeping your wrists relaxed while playing", "Try practicing the C major scale slowly", "Focus on keeping even rhythm between notes"], "lastAnalyzed": 1744622941245}}
