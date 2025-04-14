@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Piano Learning System</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+        header {
+            width: 100%;
+            background-color: #1a1a1a;
+            color: white;
+            text-align: center;
+            padding: 1rem 0;
+        }
+        main {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+        }
+        h1 {
+            margin: 0;
+        }
+        h2 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+        .piano-container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 2rem 0;
+            background-color: #333;
+            border-radius: 8px 8px 0 0;
+            padding: 1rem 0 0 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        .dashboard {
+            display: flex;
+            width: 100%;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+        .piano-keyboard {
+            display: flex;
+            position: relative;
+            width: 100%;
+            height: 200px;
+        }
+        .white-key {
+            flex: 1;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 0 0 5px 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 1rem;
+            z-index: 1;
+            box-shadow: 0 5px 0 #ccc;
+        }
+        .white-key.active {
+            background-color: #e0e0ff;
+            box-shadow: 0 2px 0 #aaa;
+            transform: translateY(3px);
+        }
+        .black-key {
+            position: absolute;
+            width: 8%;
+            height: 65%;
+            background-color: #333;
+            z-index: 2;
+            border-radius: 0 0 5px 5px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #111;
+        }
+        .black-key.active {
+            background-color: #555;
+            box-shadow: 0 2px 0 #000;
+            transform: translateY(3px);
+        }
+        /* Position black keys */
+        .black-key:nth-child(1) { left: 6%; }
+        .black-key:nth-child(2) { left: 16%; }
+        .black-key:nth-child(3) { left: 36%; }
+        .black-key:nth-child(4) { left: 46%; }
+        .black-key:nth-child(5) { left: 56%; }
+        .black-key:nth-child(6) { left: 76%; }
+        .black-key:nth-child(7) { left: 86%; }
+        
+        .panel {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex: 1;
+        }
+        .panel-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .suggestions-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .suggestions-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        .suggestions-list li:last-child {
+            border-bottom: none;
+        }
+        .scale-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .scale-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .confidence-bar {
+            height: 20px;
+            background-color: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .confidence-level {
+            height: 100%;
+            background-color: #4CAF50;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        .session-info {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        .session-data {
+            text-align: center;
+        }
+        .session-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .session-label {
+            font-size: 0.8rem;
+            color: #777;
+        }
+        #daily-goal {
+            background-color: #f0f8ff;
+            padding: 1rem;
+            border-left: 5px solid #1e90ff;
+            margin-top: 1rem;
+        }
+        
+        .footer {
+            margin-top: 2rem;
+            text-align: center;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>AI Piano Learning System</h1>
+        <p>Interactive Web Interface</p>
+    </header>
+    
+    <main>
+        <div class="piano-container">
+            <div class="dashboard">
+                <div class="panel">
+                    <div class="panel-title">AI Suggestions</div>
+                    <ul class="suggestions-list" id="suggestions">
+                        <li>Play a few notes to get AI suggestions</li>
+                    </ul>
+                </div>
+                <div class="panel">
+                    <div class="panel-title">Scale Analysis</div>
+                    <div class="scale-info">
+                        <div class="scale-name" id="scale-name">-</div>
+                        <div class="confidence-bar">
+                            <div class="confidence-level" id="confidence-level" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div id="daily-goal">Your daily goal will appear here</div>
+                </div>
+            </div>
+            
+            <div class="piano-keyboard">
+                <!-- Black keys -->
+                <div class="black-key" data-note="61" data-name="C#"></div>
+                <div class="black-key" data-note="63" data-name="D#"></div>
+                <div class="black-key" data-note="66" data-name="F#"></div>
+                <div class="black-key" data-note="68" data-name="G#"></div>
+                <div class="black-key" data-note="70" data-name="A#"></div>
+                <div class="black-key" data-note="73" data-name="C#"></div>
+                <div class="black-key" data-note="75" data-name="D#"></div>
+                
+                <!-- White keys -->
+                <div class="white-key" data-note="60" data-name="C">C</div>
+                <div class="white-key" data-note="62" data-name="D">D</div>
+                <div class="white-key" data-note="64" data-name="E">E</div>
+                <div class="white-key" data-note="65" data-name="F">F</div>
+                <div class="white-key" data-note="67" data-name="G">G</div>
+                <div class="white-key" data-note="69" data-name="A">A</div>
+                <div class="white-key" data-note="71" data-name="B">B</div>
+                <div class="white-key" data-note="72" data-name="C">C</div>
+                <div class="white-key" data-note="74" data-name="D">D</div>
+                <div class="white-key" data-note="76" data-name="E">E</div>
+            </div>
+        </div>
+        
+        <div class="session-info">
+            <div class="session-data">
+                <div class="session-value" id="notes-played">0</div>
+                <div class="session-label">Notes Played</div>
+            </div>
+            <div class="session-data">
+                <div class="session-value" id="session-duration">0</div>
+                <div class="session-label">Duration (s)</div>
+            </div>
+            <div class="session-data">
+                <div class="session-value" id="session-id">Demo-1</div>
+                <div class="session-label">Session ID</div>
+            </div>
+        </div>
+    </main>
+    
+    <div class="footer">
+        <p>Piano Learning System Prototype © 2025</p>
+    </div>
+
+    <script>
+        // Session management
+        const sessionId = 'interactive-session-' + Date.now();
+        const sessionStartTime = Date.now();
+        let notesPlayed = 0;
+        let sessionDuration = 0;
+        let playedNotes = [];
+        
+        // Update session info
+        document.getElementById('session-id').textContent = sessionId;
+        
+        // Set up timer
+        setInterval(() => {
+            sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000);
+            document.getElementById('session-duration').textContent = sessionDuration;
+        }, 1000);
+        
+        // Load daily goal
+        fetch('/api/daily-goal')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('daily-goal').textContent = data.goal;
+            });
+        
+        // Piano key event handlers
+        const keys = document.querySelectorAll('.white-key, .black-key');
+        keys.forEach(key => {
+            key.addEventListener('mousedown', () => playNote(key));
+            key.addEventListener('mouseup', () => stopNote(key));
+            key.addEventListener('mouseleave', () => stopNote(key));
+            key.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                playNote(key);
+            });
+            key.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                stopNote(key);
+            });
+        });
+        
+        // Play a note
+        function playNote(key) {
+            if (key.classList.contains('active')) return;
+            
+            key.classList.add('active');
+            const midiNote = parseInt(key.dataset.note);
+            const noteName = key.dataset.name;
+            
+            // Create note object
+            const note = {
+                midiNote: midiNote,
+                velocity: 100,
+                timestamp: Date.now(),
+                isNoteOn: true
+            };
+            
+            // Add to played notes
+            playedNotes.push(note);
+            notesPlayed++;
+            document.getElementById('notes-played').textContent = notesPlayed;
+            
+            // Send note to server
+            fetch('/api/save-note', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    note: note,
+                    sessionId: sessionId
+                })
+            });
+            
+            // If we have 3 or more notes, get suggestions
+            if (playedNotes.length >= 3 && playedNotes.length % 3 === 0) {
+                updateSuggestions();
+                analyzeScale();
+            }
+        }
+        
+        // Stop a note
+        function stopNote(key) {
+            key.classList.remove('active');
+        }
+        
+        // Update AI suggestions
+        function updateSuggestions() {
+            fetch('/api/suggestions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    notes: playedNotes,
+                    sessionId: sessionId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const suggestionsList = document.getElementById('suggestions');
+                suggestionsList.innerHTML = '';
+                
+                data.suggestions.forEach(suggestion => {
+                    const li = document.createElement('li');
+                    li.textContent = suggestion;
+                    suggestionsList.appendChild(li);
+                });
+            });
+        }
+        
+        // Analyze scale
+        function analyzeScale() {
+            // Extract just the MIDI note numbers
+            const midiNotes = playedNotes.map(note => note.midiNote);
+            
+            fetch('/api/analyze-scale', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    notes: midiNotes
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('scale-name').textContent = data.scale || 'Unknown';
+                const confidencePercent = (data.confidence || 0) * 100;
+                document.getElementById('confidence-level').style.width = confidencePercent + '%';
+            });
+        }
+    </script>
+</body>
+</html>

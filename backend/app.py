@@ -35,6 +35,10 @@ def index():
         prototype_version="1.0"
     )
 
+@app.route('/piano')
+def piano():
+    return render_template('piano.html')
+
 @app.route('/api/suggestions', methods=['POST'])
 def get_suggestions():
     """
