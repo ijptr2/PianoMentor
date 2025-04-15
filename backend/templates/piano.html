@@ -256,6 +256,47 @@
         let sessionDuration = 0;
         let playedNotes = [];
         
+        // Audio context for sound
+        let audioContext;
+        let oscillators = {};
+        const pianoSamples = {};
+        
+        // Initialize audio context on first user interaction
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Load piano samples
+                loadPianoSamples();
+                
+                // Tell user audio is ready
+                console.log('Audio initialized');
+            }
+        }
+        
+        // Load piano samples for better sound quality
+        function loadPianoSamples() {
+            // Use piano samples from a CDN (Salamander Grand Piano)
+            const sampleBaseUrl = 'https://cdn.jsdelivr.net/gh/g200kg/webaudio-pianoroll/sounds/';
+            const notes = [60, 62, 64, 65, 67, 69, 71, 72]; // C4 to C5
+            
+            notes.forEach(note => {
+                const noteStr = note.toString();
+                const url = `${sampleBaseUrl}piano${noteStr}.wav`;
+                
+                fetch(url)
+                    .then(response => response.arrayBuffer())
+                    .then(buffer => audioContext.decodeAudioData(buffer))
+                    .then(audioBuffer => {
+                        pianoSamples[note] = audioBuffer;
+                        console.log(`Loaded sample for note ${note}`);
+                    })
+                    .catch(err => {
+                        console.error(`Failed to load sample for note ${note}:`, err);
+                    });
+            });
+        }
+        
         // Update session info
         document.getElementById('session-id').textContent = sessionId;
         
@@ -275,11 +316,15 @@
         // Piano key event handlers
         const keys = document.querySelectorAll('.white-key, .black-key');
         keys.forEach(key => {
-            key.addEventListener('mousedown', () => playNote(key));
+            key.addEventListener('mousedown', () => {
+                initAudio();
+                playNote(key);
+            });
             key.addEventListener('mouseup', () => stopNote(key));
             key.addEventListener('mouseleave', () => stopNote(key));
             key.addEventListener('touchstart', (e) => {
                 e.preventDefault();
+                initAudio();
                 playNote(key);
             });
             key.addEventListener('touchend', (e) => {
@@ -288,6 +333,11 @@
             });
         });
         
+        // Convert MIDI note number to frequency
+        function midiToFrequency(midiNote) {
+            return 440 * Math.pow(2, (midiNote - 69) / 12);
+        }
+        
         // Play a note
         function playNote(key) {
             if (key.classList.contains('active')) return;
@@ -295,6 +345,43 @@
             key.classList.add('active');
             const midiNote = parseInt(key.dataset.note);
             const noteName = key.dataset.name;
+            
+            // Play the sound
+            if (audioContext) {
+                // Try to play piano sample if available
+                if (pianoSamples[midiNote]) {
+                    // Create audio source from sample
+                    const source = audioContext.createBufferSource();
+                    const gainNode = audioContext.createGain();
+                    
+                    source.buffer = pianoSamples[midiNote];
+                    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+                    
+                    source.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    source.start();
+                    oscillators[midiNote] = { source, gainNode, isSample: true };
+                } else {
+                    // Fallback to oscillator if sample not loaded
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.type = 'triangle'; // Triangle sounds a bit more piano-like than sine
+                    oscillator.frequency.setValueAtTime(midiToFrequency(midiNote), audioContext.currentTime);
+                    
+                    // Add a bit of attack and decay for more piano-like sound
+                    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.01);
+                    gainNode.gain.exponentialRampToValueAtTime(0.2, audioContext.currentTime + 0.3);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillators[midiNote] = { oscillator, gainNode, isSample: false };
+                }
+            }
             
             // Create note object
             const note = {
@@ -331,6 +418,29 @@
         // Stop a note
         function stopNote(key) {
             key.classList.remove('active');
+            const midiNote = parseInt(key.dataset.note);
+            
+            // Stop the sound
+            if (oscillators[midiNote]) {
+                const soundObj = oscillators[midiNote];
+                const gainNode = soundObj.gainNode;
+                
+                // Gentle fade out to avoid clicks
+                gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.03);
+                
+                // Stop the sound after the fade
+                setTimeout(() => {
+                    if (soundObj.isSample) {
+                        // Stop sample source
+                        soundObj.source.stop();
+                    } else {
+                        // Stop oscillator
+                        soundObj.oscillator.stop();
+                    }
+                    delete oscillators[midiNote];
+                }, 30);
+            }
         }
         
         // Update AI suggestions
